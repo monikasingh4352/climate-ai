@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Climate Change Impact Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --main-bg: #eef6f9;
+      --card-bg: #fff;
+      --primary: #28a745;
+      --secondary: #155724;
+      --accent: #007bff;
+      --error: #dc3545;
+    }
+    body {
+      background: var(--main-bg);
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #23282b;
+    }
+    .container {
+      max-width: 420px;
+      margin: 3em auto 0 auto;
+      background: var(--card-bg);
+      padding: 2em 2em 1.5em 2em;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(44,62,80,0.1);
+    }
+    h1 {
+      color: var(--primary);
+      font-size: 2em;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      margin-bottom: 1.5em;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+      font-size: 1.06em;
+    }
+    input[type='number'] {
+      margin-top: 0.4em;
+      padding: 0.5em;
+      font-size: 1em;
+      border: 1px solid #c9d6df;
+      border-radius: 5px;
+      background: #f8fafc;
+      transition: border 0.2s;
+    }
+    input[type='number']:focus {
+      border: 1.5px solid var(--accent);
+      outline: none;
+    }
+    button {
+      padding: 0.7em;
+      margin-top: 0.3em;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 1em;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    button:hover, button:focus {
+      background: var(--secondary);
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.1em;
+      padding: 1em 0;
+      color: var(--accent);
+    }
+    .spinner {
+      border: 4px solid #eef6f9;
+      border-top: 4px solid var(--accent);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #result, #error {
+      margin-top: 0.75em;
+      padding: 1em;
+      border-radius: 7px;
+      font-size: 1.13em;
+    }
+    #result {
+      background: #e7fcdc;
+      color: var(--secondary);
+      border: 1.5px solid var(--primary);
+    }
+    #error {
+      background: #fdeaea;
+      color: var(--error);
+      border: 1.5px solid var(--error);
+    }
+    @media (max-width: 600px) {
+      .container {
+        max-width: 97vw;
+        padding: 1em 0.5em;
+      }
+    }
+    .info {
+      margin: 1.2em 0 .8em 0;
+      font-size: 0.99em;
+      color: #595b59;
+      text-align: center;
+      background: #f8fafc;
+      padding: 0.6em 0.4em;
+      border-radius: 6px;
+    }
+    footer {
+      margin-top: 2.5em;
+      text-align: center;
+      color: #72968f;
+      font-size: 0.95em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Climate Change Impact Predictor</h1>
+    <div class="info">
+      Enter today’s <strong>average temperature</strong> (°C), <strong>CO₂</strong> (ppm), and <strong>rainfall</strong> (mm).<br>
+      Powered by a machine learning model for climate action.
+    </div>
+    <form id="climate-form" autocomplete="off">
+      <label>
+        Temperature (°C)
+        <input name="temperature" type="number" step="0.01" min="-90" max="65" required placeholder="e.g. 24.5">
+      </label>
+      <label>
+        CO₂ (ppm)
+        <input name="co2" type="number" step="1" min="280" max="1200" required placeholder="e.g. 420">
+      </label>
+      <label>
+        Rainfall (mm)
+        <input name="rainfall" type="number" step="0.1" min="0" max="1000" required placeholder="e.g. 17.0">
+      </label>
+      <button type="submit">Predict Future Temperature</button>
+    </form>
+    <div id="result" style="display:none;"></div>
+    <div id="error" style="display:none;"></div>
+    <div class="loading" id="loading" style="display:none;">
+      <span class="spinner"></span> Predicting&hellip;
+    </div>
+  </div>
+  <footer>
+    &copy; 2025 Climate Action AI Demo
+  </footer>
+  <script>
+    const form = document.getElementById('climate-form');
+    const resultBox = document.getElementById('result');
+    const errorBox = document.getElementById('error');
+    const loadingBox = document.getElementById('loading');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      resultBox.style.display = 'none';
+      errorBox.style.display = 'none';
+      loadingBox.style.display = 'flex';
+      // Get values
+      const fd = new FormData(form);
+      const entry = [
+        Number(fd.get('temperature')),
+        Number(fd.get('co2')),
+        Number(fd.get('rainfall'))
+      ];
+      // Build "history"
+      const history = Array(10).fill(entry); // 10 last days = same input for demo
+      try {
+        const res = await fetch('http://localhost:8000/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({history})
+        });
+        loadingBox.style.display = 'none';
+        if (!res.ok) throw new Error('Prediction API error');
+        const data = await res.json();
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<strong>Forecasted Temperature (next day):</strong> 
+          ${data.predicted_temperature}&deg;C
+          <br><br>
+          <span style="font-size:0.97em;">
+          <em>If this is rising, consider mitigation measures: emission reduction, afforestation, sustainable practices, etc.</em>
+          </span>`;
+      } catch(err) {
+        loadingBox.style.display = 'none';
+        errorBox.style.display = 'block';
+        errorBox.textContent = 'Error: Unable to get prediction. Please check your API server and try again.';
+      }
+    });
+  </script>
+</body>
+</html>
