@@ -31,3 +31,5 @@ def predict(input: WeatherInput):
     pred = model.predict(X_scaled)
     pred_temp = scaler.inverse_transform([[pred[0][0], 0, 0]])[0][0]
     return {"predicted_temperature": round(float(pred_temp), 2)}
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
